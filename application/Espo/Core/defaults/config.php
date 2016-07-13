@@ -32,6 +32,7 @@ return array (
         'driver' => 'pdo_mysql',
         'host' => 'localhost',
         'port' => '',
+        'charset' => 'utf8',
         'dbname' => '',
         'user' => '',
         'password' => '',
@@ -67,6 +68,7 @@ return array (
         'de_DE',
         'es_ES',
         'fr_FR',
+        'id_ID',
         'nl_NL',
         'tr_TR',
         'ro_RO',
@@ -93,7 +95,7 @@ return array (
         'Opportunity',
     ),
     "tabList" => ["Account", "Contact", "Lead", "Opportunity", "Calendar", "Meeting", "Call", "Task", "Case", "Email", "Document", "Campaign", "KnowledgeBaseArticle"],
-    "quickCreateList" => ["Account", "Contact", "Lead", "Opportunity", "Meeting", "Call", "Task", "Case"],
+    "quickCreateList" => ["Account", "Contact", "Lead", "Opportunity", "Meeting", "Call", "Task", "Case", "Email"],
     'calendarDefaultEntity' => 'Meeting',
     'exportDisabled' => false,
     'assignmentEmailNotifications' => false,
@@ -113,6 +115,7 @@ return array (
     'authTokenLifetime' => 0,
     'authTokenMaxIdleTime' => 120,
     'userNameRegularExpression' => '[^a-z0-9\-@_\.\s]',
+    'addressFormat' => 1,
     'displayListViewRecordCount' => true,
     'dashboardLayout' => [
         (object) [

@@ -41,10 +41,14 @@
             "maxLength": 1
         },
         "dashboardLayout": {
-            "type": "jsonArray"
+            "type": "jsonArray",
+            "view": "views/settings/fields/dashboard-layout"
         },
         "dashletsOptions": {
             "type": "jsonObject"
+        },
+        "sharedCalendarUserList": {
+            "type": "jsonArray"
         },
         "presetFilters": {
             "type": "jsonObject"
@@ -126,6 +130,10 @@
         "emailReplyToAllByDefault": {
             "type": "bool",
             "default": true
+        },
+        "isPortalUser": {
+            "type": "bool",
+            "notStorable": true
         }
     }
 }

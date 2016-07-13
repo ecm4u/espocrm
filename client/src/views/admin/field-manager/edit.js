@@ -32,6 +32,8 @@ Espo.define('views/admin/field-manager/edit', ['view', 'model'], function (Dep, 
 
         template: 'admin/field-manager/edit',
 
+        entityTypeWithTranslatedOptionsList: ['enum', 'multiEnum', 'array', 'phone'],
+
         data: function () {
             return {
                 scope: this.scope,
@@ -115,8 +117,12 @@ Espo.define('views/admin/field-manager/edit', ['view', 'model'], function (Dep, 
                     this.model.populateDefaults();
                 }
 
-                this.createFieldView('varchar', 'name', !this.isNew);
-                this.createFieldView('varchar', 'label');
+                this.createFieldView('varchar', 'name', !this.isNew, {
+                    trim: true
+                });
+                this.createFieldView('varchar', 'label', null, {
+                    trim: true
+                });
 
                 this.params.forEach(function (o) {
                     if (o.hidden) {
@@ -181,6 +187,8 @@ Espo.define('views/admin/field-manager/edit', ['view', 'model'], function (Dep, 
             }
 
             this.listenToOnce(this.model, 'sync', function () {
+                Espo.Ui.notify(false);
+
                 this.getMetadata().load(function () {
                     this.getMetadata().storeToCache();
                     this.trigger('after:save');
@@ -194,7 +202,7 @@ Espo.define('views/admin/field-manager/edit', ['view', 'model'], function (Dep, 
                     langData[this.scope]['fields'][this.model.get('name')] = this.model.get('label');
 
 
-                    if (~['enum', 'phone'].indexOf(this.model.get('type')) && this.model.get('translatedOptions')) {
+                    if (this.getMetadata().get(['fields', this.model.get('type'), 'translatedOptions']) && this.model.get('translatedOptions')) {
                         langData[this.scope].options = langData[this.scope].options || {};
                         langData[this.scope]['options'][this.model.get('name')] = this.model.get('translatedOptions') || {};
                     }

@@ -20,7 +20,8 @@
         "relationName": "Middle Table Name",
         "linkMultipleField": "Link Multiple Field",
         "linkMultipleFieldForeign": "Foreign Link Multiple Field",
-        "disabled": "Disabled"
+        "disabled": "Disabled",
+        "textFilterFields": "Text Filter Fields"
     },
     "options": {
         "type": {
@@ -44,6 +45,6 @@
     "messages": {
         "entityCreated": "Entity has been created",
         "linkAlreadyExists": "Link name conflict.",
-        "linkConflict": "Link with the same name already exists."
+        "linkConflict": "Name conflict: link or field with the same name already exists."
     }
 }

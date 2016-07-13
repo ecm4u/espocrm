@@ -51,10 +51,12 @@
             "readOnly": true
         },
         "assignedUser": {
-            "type": "link"
+            "type": "link",
+            "view": "views/fields/assigned-user"
         },
         "teams": {
-            "type": "linkMultiple"
+            "type": "linkMultiple",
+            "view": "views/fields/teams"
         },
         "categories": {
             "type": "linkMultiple",

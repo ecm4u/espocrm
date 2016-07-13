@@ -45,11 +45,9 @@ class Invitations
 
     protected $language;
 
-    protected $fileManager;
-
     protected $ics;
 
-    public function __construct($entityManager, $smtpParams, $mailSender, $config, $dateTime, $language, $fileManager)
+    public function __construct($entityManager, $smtpParams, $mailSender, $config, $dateTime, $language)
     {
         $this->entityManager = $entityManager;
         $this->smtpParams = $smtpParams;
@@ -57,7 +55,6 @@ class Invitations
         $this->config = $config;
         $this->dateTime = $dateTime;
         $this->language = $language;
-        $this->fileManager = $fileManager;
     }
 
     protected function getEntityManager()
@@ -75,17 +72,28 @@ class Invitations
             $key = '{'.$field.'}';
             switch ($d['type']) {
                 case 'datetime':
-                    $contents = str_replace($key, $this->dateTime->convertSystemDateTime($entity->get($field)), $contents);
+                    $value = $entity->get($field);
+                    if ($value) {
+                        $value = $this->dateTime->convertSystemDateTime($value);
+                    }
+                    $contents = str_replace($key, $value, $contents);
                     break;
                 case 'date':
-                    $contents = str_replace($key, $this->dateTime->convertSystemDate($entity->get($field)), $contents);
+                    $value = $entity->get($field);
+                    if ($value) {
+                        $value = $this->dateTime->convertSystemDate($value);
+                    }
+                    $contents = str_replace($key, $value, $contents);
                     break;
                 case 'jsonArray':
                     break;
                 case 'jsonObject':
                     break;
                 default:
-                    $contents = str_replace($key, $entity->get($field), $contents);
+                    $value = $entity->get($field);
+                    if (is_string($value) || $value === null || is_scalar($value) || is_callable([$value, '__toString'])) {
+                        $contents = str_replace($key, $value, $contents);
+                    }
             }
         }
 
@@ -108,7 +116,7 @@ class Invitations
         if ($uid) {
             $contents = str_replace('{acceptLink}', $siteUrl . '?entryPoint=eventConfirmation&action=accept&uid=' . $uid->get('name'), $contents);
             $contents = str_replace('{declineLink}', $siteUrl . '?entryPoint=eventConfirmation&action=decline&uid=' . $uid->get('name'), $contents);
-            $contents = str_replace('{tentativeLink}', $siteUrl . '?entryPoint=eventConfirmation&action=tentativeLink&uid=' . $uid->get('name'), $contents);
+            $contents = str_replace('{tentativeLink}', $siteUrl . '?entryPoint=eventConfirmation&action=tentative&uid=' . $uid->get('name'), $contents);
         }
         return $contents;
     }

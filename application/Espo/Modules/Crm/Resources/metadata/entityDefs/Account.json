@@ -140,7 +140,8 @@
             "view": "views/fields/assigned-user"
         },
         "teams": {
-            "type": "linkMultiple"
+            "type": "linkMultiple",
+            "view": "views/fields/teams"
         },
         "targetLists": {
             "type": "linkMultiple",
@@ -271,7 +272,8 @@
     },
     "collection": {
         "sortBy": "name",
-        "asc": true
+        "asc": true,
+        "textFilterFields": ["name", "emailAddress"]
     },
     "indexes": {
         "name": {

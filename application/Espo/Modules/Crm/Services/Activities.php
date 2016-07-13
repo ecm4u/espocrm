@@ -42,7 +42,8 @@ class Activities extends \Espo\Core\Services\Base
         'user',
         'metadata',
         'acl',
-        'selectManagerFactory'
+        'selectManagerFactory',
+        'serviceFactory'
     );
 
     protected $calendarScopeList = ['Meeting', 'Call', 'Task'];
@@ -77,6 +78,11 @@ class Activities extends \Espo\Core\Services\Base
         return $this->getInjection('selectManagerFactory');
     }
 
+    protected function getServiceFactory()
+    {
+        return $this->getInjection('serviceFactory');
+    }
+
     protected function isPerson($scope)
     {
         return in_array($scope, ['Contact', 'Lead', 'User']);
@@ -102,9 +108,23 @@ class Activities extends \Espo\Core\Services\Base
             ],
             'leftJoins' => [['users', 'usersLeft']],
             'whereClause' => array(
-                'usersLeftMiddle.userId' => $entity->id
-            )
+            ),
+            'customJoin' => ''
         );
+
+        $where = array(
+            'usersLeftMiddle.userId' => $entity->id
+        );
+
+        if ($entity->get('isPortalUser') && $entity->get('contactId')) {
+            $selectParams['leftJoins'][] = ['contacts', 'contactsLeft'];
+            $where['contactsLeftMiddle.contactId'] = $entity->get('contactId');
+            $selectParams['whereClause'][] = array(
+                'OR' => $where
+            );
+        } else {
+            $selectParams['whereClause'][] = $where;
+        }
 
         if (!empty($statusList)) {
             $statusOpKey = 'status';
@@ -141,9 +161,23 @@ class Activities extends \Espo\Core\Services\Base
             ],
             'leftJoins' => [['users', 'usersLeft']],
             'whereClause' => array(
-                'usersLeftMiddle.userId' => $entity->id
-            )
+            ),
+            'customJoin' => ''
         );
+
+        $where = array(
+            'usersLeftMiddle.userId' => $entity->id
+        );
+
+        if ($entity->get('isPortalUser') && $entity->get('contactId')) {
+            $selectParams['leftJoins'][] = ['contacts', 'contactsLeft'];
+            $where['contactsLeftMiddle.contactId'] = $entity->get('contactId');
+            $selectParams['whereClause'][] = array(
+                'OR' => $where
+            );
+        } else {
+            $selectParams['whereClause'][] = $where;
+        }
 
         if (!empty($statusList)) {
             $statusOpKey = 'status';
@@ -162,6 +196,13 @@ class Activities extends \Espo\Core\Services\Base
 
     protected function getUserEmailQuery($entity, $op = 'IN', $statusList = null)
     {
+        if ($entity->get('isPortalUser') && $entity->get('contactId')) {
+            $contact = $this->getEntityManager()->getEntity('Contact', $entity->get('contactId'));
+            if ($contact) {
+                return $this->getEmailQuery($contact, $op, $statusList);
+            }
+        }
+
         $selectManager = $this->getSelectManagerFactory()->create('Email');
 
         $selectParams = array(
@@ -181,7 +222,8 @@ class Activities extends \Espo\Core\Services\Base
             'leftJoins' => [['users', 'usersLeft']],
             'whereClause' => array(
                 'usersLeftMiddle.userId' => $entity->id
-            )
+            ),
+            'customJoin' => ''
         );
 
         if (!empty($statusList)) {
@@ -225,7 +267,8 @@ class Activities extends \Espo\Core\Services\Base
                 'status',
                 'createdAt'
             ],
-            'whereClause' => array()
+            'whereClause' => array(),
+            'customJoin' => ''
         );
 
         if (!empty($statusList)) {
@@ -439,7 +482,8 @@ class Activities extends \Espo\Core\Services\Base
                 'status',
                 'createdAt'
             ],
-            'whereClause' => array()
+            'whereClause' => array(),
+            'customJoin' => ''
         );
 
         if (!empty($statusList)) {
@@ -636,6 +680,9 @@ class Activities extends \Espo\Core\Services\Base
     public function getHistory($scope, $id, $params)
     {
         $entity = $this->getEntityManager()->getEntity($scope, $id);
+        if (!$entity) {
+            throw new NotFound();
+        }
 
         $this->accessCheck($entity);
 
@@ -686,7 +733,8 @@ class Activities extends \Espo\Core\Services\Base
                 'dateStart>=' => $from,
                 'dateStart<' => $to,
                 'usersMiddle.status!=' => 'Declined'
-            )
+            ),
+            'customJoin' => ''
         );
 
         return $this->getEntityManager()->getQuery()->createSelectQuery('Meeting', $selectParams);
@@ -716,7 +764,8 @@ class Activities extends \Espo\Core\Services\Base
                 'dateStart>=' => $from,
                 'dateStart<' => $to,
                 'usersMiddle.status!=' => 'Declined'
-            )
+            ),
+            'customJoin' => ''
         );
 
         return $this->getEntityManager()->getQuery()->createSelectQuery('Call', $selectParams);
@@ -742,7 +791,6 @@ class Activities extends \Espo\Core\Services\Base
             ],
             'whereClause' => array(
                 'assignedUserId' => $userId,
-
                 array(
                     'OR' => array(
                         array(
@@ -765,6 +813,88 @@ class Activities extends \Espo\Core\Services\Base
         );
 
         return $this->getEntityManager()->getQuery()->createSelectQuery('Task', $selectParams);
+    }
+
+    protected function getCalendarSelectParams($scope, $userId, $from, $to)
+    {
+        $selectManager = $this->getSelectManagerFactory()->create($scope);
+
+        $seed = $this->getEntityManager()->getEntity($scope);
+
+        $select = [
+            ['VALUE:' . $scope, 'scope'],
+            'id',
+            'name',
+            ['dateStart', 'dateStart'],
+            ['dateEnd', 'dateEnd'],
+            ($seed->hasAttribute('status') ? ['status', 'status'] : ['VALUE:', 'status']),
+            ($seed->hasAttribute('dateStartDate') ? ['dateStartDate', 'dateStartDate'] : ['VALUE:', 'dateStartDate']),
+            ($seed->hasAttribute('dateEndDate') ? ['dateEndDate', 'dateEndDate'] : ['VALUE:', 'dateEndDate']),
+            ($seed->hasAttribute('parentType') ? ['parentType', 'parentType'] : ['VALUE:', 'parentType']),
+            ($seed->hasAttribute('parentId') ? ['parentId', 'parentId'] : ['VALUE:', 'parentId']),
+            'createdAt'
+        ];
+
+        $wherePart = array(
+            'assignedUserId' => $userId,
+        );
+
+        if ($seed->hasRelation('users')) {
+            $wherePart['usersMiddle.userId'] = $userId;
+        }
+
+        if ($seed->hasRelation('assignedUsers')) {
+            $wherePart['assignedUsersMiddle.userId'] = $userId;
+        }
+
+        $selectParams = array(
+            'select' => $select,
+            'leftJoins' => [],
+            'whereClause' => array(
+                'OR' => $wherePart,
+                array(
+                    'OR' => array(
+                        array(
+                            'dateEnd' => null,
+                            'dateStart>=' => $from,
+                            'dateStart<' => $to,
+                        ),
+                        array(
+                            'dateEnd>=' => $from,
+                            'dateEnd<' => $to,
+                        ),
+                        array(
+                            'dateEndDate!=' => null,
+                            'dateEndDate>=' => $from,
+                            'dateEndDate<' => $to,
+                        )
+                    )
+                )
+            )
+        );
+
+        if ($seed->hasRelation('users')) {
+            $selectParams['leftJoins'][] = 'users';
+        }
+
+        if ($seed->hasRelation('assignedUsers')) {
+            $selectParams['leftJoins'][] = 'assignedUsers';
+        }
+
+        return $selectParams;
+    }
+
+    protected function getCalendarQuery($scope, $userId, $from, $to)
+    {
+        $service = $this->getServiceFactory()->create($scope);
+
+        if (method_exists($service, 'getCalendarSelectParams')) {
+            $selectParams = $service->getCalendarSelectParams($userId, $from, $to);
+        } else {
+            $selectParams = $this->getCalendarSelectParams($scope, $userId, $from, $to);
+        }
+
+        return $this->getEntityManager()->getQuery()->createSelectQuery($scope, $selectParams);
     }
 
     public function getEvents($userId, $from, $to, $scopeList = null)
@@ -791,6 +921,10 @@ class Activities extends \Espo\Core\Services\Base
                 $methodName = 'getCalendar' . $scope . 'Query';
                 if (method_exists($this, $methodName)) {
                     $sqlPartList[] = $this->$methodName($userId, $from, $to);
+                } else {
+                    if ($this->getMetadata()->get('scopes.' . $scope . '.calendar')) {
+                        $sqlPartList[] = $this->getCalendarQuery($scope, $userId, $from, $to);
+                    }
                 }
             }
         }
@@ -943,8 +1077,11 @@ class Activities extends \Espo\Core\Services\Base
 
         $sth = $pdo->prepare($unionSql);
 
-        $sth->bindParam(':offset', intval($params['offset']), \PDO::PARAM_INT);
-        $sth->bindParam(':maxSize', intval($params['maxSize']), \PDO::PARAM_INT);
+        $offset = intval($params['offset']);
+        $maxSize = intval($params['maxSize']);
+
+        $sth->bindParam(':offset', $offset, \PDO::PARAM_INT);
+        $sth->bindParam(':maxSize', $maxSize, \PDO::PARAM_INT);
         $sth->execute();
         $rows = $sth->fetchAll(\PDO::FETCH_ASSOC);
 

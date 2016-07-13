@@ -64,7 +64,7 @@ class Record extends Base
         return $service;
     }
 
-    public function actionRead($params)
+    public function actionRead($params, $data, $request)
     {
         $id = $params['id'];
         $entity = $this->getRecordService()->getEntity($id);
@@ -128,7 +128,7 @@ class Record extends Base
         $where = $request->get('where');
         $offset = $request->get('offset');
         $maxSize = $request->get('maxSize');
-        $asc = $request->get('asc') === 'true';
+        $asc = $request->get('asc', 'true') === 'true';
         $sortBy = $request->get('sortBy');
         $q = $request->get('q');
         $primaryFilter = $request->get('primaryFilter');
@@ -174,7 +174,7 @@ class Record extends Base
         $where = $request->get('where');
         $offset = $request->get('offset');
         $maxSize = $request->get('maxSize');
-        $asc = $request->get('asc') === 'true';
+        $asc = $request->get('asc', 'true') === 'true';
         $sortBy = $request->get('sortBy');
         $q = $request->get('q');
         $textFilter = $request->get('textFilter');
@@ -292,7 +292,6 @@ class Record extends Base
             $params['where'] = $where;
         }
         if (array_key_exists('ids', $data)) {
-            $where = json_decode(json_encode($data['where']), true);
             $params['ids'] = $data['ids'];
         }
 
@@ -411,17 +410,18 @@ class Record extends Base
             throw new BadRequest();
         }
 
-        if (empty($data['targetId']) || empty($data['sourceIds']) || !is_array($data['sourceIds'])) {
+        if (empty($data['targetId']) || empty($data['sourceIds']) || !is_array($data['sourceIds']) || !($data['attributes'] instanceof \StdClass)) {
             throw new BadRequest();
         }
         $targetId = $data['targetId'];
         $sourceIds = $data['sourceIds'];
+        $attributes = get_object_vars($data['attributes']);
 
         if (!$this->getAcl()->check($this->name, 'edit')) {
             throw new Forbidden();
         }
 
-        return $this->getRecordService()->merge($targetId, $sourceIds);
+        return $this->getRecordService()->merge($targetId, $sourceIds, $attributes);
     }
 }
 

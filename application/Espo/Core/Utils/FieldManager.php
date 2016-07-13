@@ -89,6 +89,7 @@ class FieldManager
 
     public function update($name, $fieldDefs, $scope)
     {
+        $name = trim($name);
         /*Add option to metadata to identify the custom field*/
         if (!$this->isCore($name, $scope)) {
             $fieldDefs[$this->customOptionName] = true;
@@ -99,7 +100,7 @@ class FieldManager
             $this->setLabel($name, $fieldDefs['label'], $scope);
         }
 
-        if (isset($fieldDefs['type']) && ($fieldDefs['type'] == 'enum' || $fieldDefs['type'] == 'phone')) {
+        if (isset($fieldDefs['type']) && $this->getMetadata()->get(['fields', $fieldDefs['type'], 'translatedOptions'])) {
             if (isset($fieldDefs['translatedOptions'])) {
                 $this->setTranslatedOptions($name, $fieldDefs['translatedOptions'], $scope);
             }

@@ -91,6 +91,8 @@ class Email extends \Espo\Core\Notificators\Base
             $this->getEntityManager()->getRepository('Email')->loadFromField($entity);
         }
 
+        $person = null;
+
         $from = $entity->get('from');
         if ($from) {
             $person = $this->getEntityManager()->getRepository('EmailAddress')->getEntityByAddress($from, null, ['User', 'Contact', 'Lead']);
@@ -123,11 +125,12 @@ class Email extends \Espo\Core\Notificators\Base
         }
 
         foreach ($userIdList as $userId) {
-            if ($userIdFrom == $userId) {
-                continue;
-            }
+            if (!$userId) continue;
+            if ($userIdFrom === $userId) continue;
+
             $user = $this->getEntityManager()->getEntity('User', $userId);
             if (!$user) continue;
+            if ($user->get('isPortalUser')) continue;
             if (!$this->getAclManager()->checkScope($user, 'Email')) {
                 continue;
             }
